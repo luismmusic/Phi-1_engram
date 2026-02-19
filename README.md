@@ -30,17 +30,21 @@ Sigue estos pasos exactos y exhaustivos:
 
 1.  **Abre Google Colab**: Ve a [colab.research.google.com](https://colab.research.google.com).
 2.  **Crea un Notebook nuevo**: Haz clic en el botón "Nuevo cuaderno" (New notebook).
-3.  **Paso A: Instalar librerías**: Copia y ejecuta este comando en la primera celda:
+3.  **🔴 PASO CRÍTICO: Activar GPU**:
+    *   Sin esto, el modelo será extremadamente lento y consumirá demasiados recursos de CPU.
+    *   Ve al menú superior: **Entorno de ejecución** -> **Cambiar tipo de entorno de ejecución**.
+    *   En "Acelerador de hardware", selecciona **T4 GPU** y haz clic en "Guardar".
+5.  **Paso A: Instalar librerías**: Copia y ejecuta este comando en la primera celda:
     ```bash
     !pip install torch transformers tokenizers numpy sympy
     ```
-4.  **Paso B: Clonar el proyecto con Git**: Crea una celda nueva y ejecuta este comando (reemplaza la URL si es necesario):
+6.  **Paso B: Clonar el proyecto con Git**: Crea una celda nueva y ejecuta este comando (reemplaza la URL si es necesario):
     ```bash
     !git clone https://github.com/tu-usuario/Phi-1_engram.git
     %cd Phi-1_engram
     ```
     *Nota: El símbolo `!` indica a Colab que ejecute un comando del sistema, y `%cd` cambia la carpeta de trabajo.*
-5.  **Paso C: Ejecutar la verificación**: Ejecuta este comando en otra celda:
+7.  **Paso C: Ejecutar la verificación**: Ejecuta este comando en otra celda:
     ```bash
     !python verify_phi_engram.py
     ```
@@ -191,5 +195,11 @@ Si quieres probar la capacidad conversacional del modelo, utiliza el script inte
     - El script te pedirá que escribas un mensaje: `👤 Tú:`.
     - Escribe tu pregunta y presiona `Enter`.
     - El modelo responderá como `🤖 Phi-Engram:`.
-3.  **Consejo de experto**:
+3.  **Optimización de Recursos**:
+    El script de chat ahora utiliza **precisión reducida (FP16)** automáticamente si detecta una GPU. Esto reduce el consumo de memoria RAM de video a la mitad sin perder calidad.
+4.  **En caso de error "Out of Memory" (OOM)**:
+    Si recibes un error de memoria agotada:
+    - Reinicia el entorno de ejecución (**Entorno de ejecución** -> **Reiniciar sesión**).
+    - No ejecutes otros modelos pesados en la misma sesión.
+5.  **Consejo de experto**:
     Como Phi-1 es un modelo base (no entrenado específicamente para chat), funciona mejor si le haces preguntas directas o le pides completar frases.

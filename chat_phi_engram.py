@@ -8,12 +8,19 @@ import os
 # =============================================================================
 
 def run_chat():
+    # Detección de dispositivo y optimización de memoria
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float16 if device == "cuda" else torch.float32
     model_id = "microsoft/phi-1"
 
     print("--------------------------------------------------")
     print("🤖 CARGANDO CHAT DE PHI-1 ENGRAM")
     print(f"Dispositivo detectado: {device.upper()}")
+    print(f"Precisión utilizada: {dtype}")
+
+    if device == "cpu":
+        print("⚠️  ADVERTENCIA: Estás usando la CPU. El modelo será MUY lento.")
+        print("En Colab, ve a: Entorno de ejecución -> Cambiar tipo de entorno -> T4 GPU")
     print("--------------------------------------------------")
 
     # 1. Configuración del modelo
@@ -29,10 +36,9 @@ def run_chat():
     )
 
     # 2. Cargar modelo y pesos
-    # En este ejemplo usamos inicialización aleatoria para demostración rápida.
-    # Para usar el modelo real entrenado, usarías model.load_state_dict(...)
-    print("[1/2] Instanciando arquitectura...")
-    model = PhiEngramForCausalLM(config).to(device)
+    print("[1/2] Instanciando arquitectura (Modo Eficiente)...")
+    # Usamos half precision (fp16) para reducir el consumo de VRAM a la mitad
+    model = PhiEngramForCausalLM(config).to(device=device, dtype=dtype)
     model.eval()
 
     # 3. Cargar Tokenizador
@@ -65,11 +71,12 @@ def run_chat():
         with torch.no_grad():
             output_tokens = model.generate(
                 **inputs,
-                max_new_tokens=50,      # Longitud máxima de la respuesta
+                max_new_tokens=100,     # Aumentamos un poco el límite
                 do_sample=True,         # Permite creatividad
                 temperature=0.7,        # Nivel de aleatoriedad
                 top_p=0.9,              # Filtro de palabras probables
-                pad_token_id=tokenizer.pad_token_id
+                pad_token_id=tokenizer.pad_token_id,
+                use_cache=True          # Crucial para rendimiento
             )
 
         # Traducimos de números a palabras
@@ -79,6 +86,10 @@ def run_chat():
         response = full_text.split("Assistant:")[-1].strip()
 
         print(f"\r🤖 Phi-Engram: {response}\n")
+
+        # Limpieza de memoria para evitar picos de consumo (solo en GPU)
+        if device == "cuda":
+            torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     try:

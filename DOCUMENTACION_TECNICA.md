@@ -149,3 +149,20 @@ Implementa el algoritmo de **Warm-up de Memoria**:
 Dado que Phi-1 es un modelo *CausalLM* base (no *Instruct*), la interfaz utiliza un **Chat Template** manual:
 - Se concatena el prefijo `User:` y el sufijo `Assistant:` para inducir el comportamiento de respuesta.
 - Se utiliza decodificación estocástica (`do_sample=True`) para permitir que la memoria Engram influya en la variabilidad de la salida.
+
+---
+
+## 9. Optimización de Recursos y Memoria
+
+Para mitigar los picos de consumo observados en entornos de nube limitados (como el nivel gratuito de Colab), hemos implementado las siguientes estrategias:
+
+### 9.1 Precisión de Punto Flotante (Mixed Precision)
+El modelo puede ejecutarse en diferentes precisiones:
+- **FP32 (Single Precision)**: Es la precisión estándar. Cada parámetro ocupa 4 bytes. (Consumo alto).
+- **FP16 (Half Precision)**: Utilizada automáticamente por `chat_phi_engram.py` si hay una GPU disponible. Cada parámetro ocupa 2 bytes. Reduce el consumo de VRAM en un 50% y acelera la inferencia.
+
+### 9.2 Gestión Activa de Caché
+En la interfaz de chat, invocamos `torch.cuda.empty_cache()` después de cada respuesta generada. Esto no reduce la memoria ocupada por los pesos del modelo, pero libera la memoria fragmentada utilizada durante los cálculos de atención y n-gramas, evitando errores de OOM acumulativos.
+
+### 9.3 Requisito de Aceleración por Hardware
+Debido a la complejidad del módulo Engram (específicamente el hashing de n-gramas y la convolución causal), **no se recomienda el uso de CPU**. La latencia en CPU es órdenes de magnitud superior debido a que estas operaciones están optimizadas para la ejecución masivamente paralela de CUDA.

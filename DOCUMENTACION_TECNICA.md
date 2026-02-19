@@ -166,3 +166,8 @@ En la interfaz de chat, invocamos `torch.cuda.empty_cache()` después de cada re
 
 ### 9.3 Requisito de Aceleración por Hardware
 Debido a la complejidad del módulo Engram (específicamente el hashing de n-gramas y la convolución causal), **no se recomienda el uso de CPU**. La latencia en CPU es órdenes de magnitud superior debido a que estas operaciones están optimizadas para la ejecución masivamente paralela de CUDA.
+
+### 9.4 Inicialización de Memoria Optimizada (Low CPU RAM)
+En entornos como Google Colab (límite de ~13GB RAM), la instanciación de modelos de +1.3B parámetros puede agotar la memoria. Hemos aplicado dos optimizaciones críticas:
+1.  **Constructor Directo**: Se han reimplementado los constructores `__init__` para inyectar las capas de Engram desde el primer momento, evitando que PyTorch cree las capas originales de Phi-1 y las mantenga en RAM antes de ser reemplazadas.
+2.  **Default Dtype Casting**: Los scripts utilizan `torch.set_default_dtype(torch.float16)` durante la creación del modelo. Esto reduce el tamaño de los pesos en la RAM del sistema de ~8GB a ~4GB, dejando margen suficiente para el sistema operativo y el proceso de carga de pesos.

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, PhiConfig, PhiModel, PhiForCausalLM, PhiPreTrainedModel
-from transformers.models.phi.modeling_phi import PhiDecoderLayer, PhiAttention, PhiMLP
+from transformers.models.phi.modeling_phi import PhiDecoderLayer, PhiAttention, PhiMLP, PhiRotaryEmbedding
 from transformers.cache_utils import Cache, DynamicCache
 from transformers.masking_utils import create_causal_mask
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
@@ -571,7 +571,9 @@ class PhiEngramModel(PhiModel):
     config_class = PhiEngramConfig
 
     def __init__(self, config: PhiEngramConfig):
-        super().__init__(config)
+        # Llamamos al constructor de la clase base PreTrainedModel directamente
+        # para evitar que PhiModel cree capas duplicadas en RAM.
+        PhiPreTrainedModel.__init__(self, config)
 
         # Engram specific parameters
         engram_vocab_size = getattr(config, "engram_vocab_size", [51200*5, 51200*5])
@@ -596,11 +598,23 @@ class PhiEngramModel(PhiModel):
             seed=seed,
         )
 
-        # Re-initialize layers with PhiEngramDecoderLayer
+        # Inicialización de componentes base (manual para ahorrar memoria)
+        self.padding_idx = config.pad_token_id
+        self.vocab_size = config.vocab_size
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.rotary_emb = PhiRotaryEmbedding(config=config)
+        self.gradient_checkpointing = False
+        self.embed_dropout = nn.Dropout(config.embd_pdrop)
+        self.final_layernorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+
+        # Inicializamos las capas de Engram directamente
         self.layers = nn.ModuleList(
             [PhiEngramDecoderLayer(config, layer_idx, self.hash_mapping.vocab_size_across_layers)
              for layer_idx in range(config.num_hidden_layers)]
         )
+
+        # Inicialización final de pesos
+        self.post_init()
 
     def _prepare_causal_mask(self, attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions, position_ids):
         """
@@ -788,14 +802,15 @@ class PhiEngramForCausalLM(PhiForCausalLM):
     config_class = PhiEngramConfig
 
     def __init__(self, config: PhiEngramConfig):
-        # We don't call super().__init__(config) because it would create PhiModel
-        # Instead we manually initialize it to use PhiEngramModel
-        super(PhiForCausalLM, self).__init__(config)
+        # Saltamos el constructor de PhiForCausalLM para evitar la creación de
+        # un PhiModel estándar redundante.
+        PhiPreTrainedModel.__init__(self, config)
+
         self.model = PhiEngramModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=True)
 
-        # Initialize weights and apply final processing
+        # Inicialización final de pesos
         self.post_init()
 
     def get_model(self):

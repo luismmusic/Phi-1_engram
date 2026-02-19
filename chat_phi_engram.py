@@ -37,8 +37,17 @@ def run_chat():
 
     # 2. Cargar modelo y pesos
     print("[1/2] Instanciando arquitectura (Modo Eficiente)...")
-    # Usamos half precision (fp16) para reducir el consumo de VRAM a la mitad
+
+    # Optimizamos la creación en CPU: Establecemos el tipo de dato por defecto
+    # a float16 para que los pesos se creen ya reducidos en la RAM del sistema.
+    if device == "cuda":
+        torch.set_default_dtype(torch.float16)
+
     model = PhiEngramForCausalLM(config).to(device=device, dtype=dtype)
+
+    # Restauramos el tipo de dato por defecto para evitar efectos secundarios
+    torch.set_default_dtype(torch.float32)
+
     model.eval()
 
     # 3. Cargar Tokenizador

@@ -196,7 +196,7 @@ Si quieres probar la capacidad conversacional del modelo, utiliza el script inte
     - Escribe tu pregunta y presiona `Enter`.
     - El modelo responderá como `🤖 Phi-Engram:`.
 3.  **Optimización de Recursos**:
-    El script de chat ahora utiliza **precisión reducida (FP16)** automáticamente si detecta una GPU. Esto reduce el consumo de memoria RAM de video a la mitad sin perder calidad.
+    El script de chat ahora utiliza **precisión reducida (FP16)** automáticamente si detecta una GPU. Esto reduce el consumo de memoria RAM tanto del sistema como de la GPU a la mitad, evitando el cierre del entorno por falta de memoria.
 4.  **En caso de error "Out of Memory" (OOM)**:
     Si recibes un error de memoria agotada:
     - Reinicia el entorno de ejecución (**Entorno de ejecución** -> **Reiniciar sesión**).

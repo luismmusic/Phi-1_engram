@@ -4,124 +4,149 @@ Esta guía te enseñará, paso a paso y sin omitir detalles, cómo utilizar esta
 
 ---
 
+## 🚀 Flujo de Trabajo en la Nube con Git (Método Profesional)
+
+Dado que estás trabajando en la nube (Google Colab, Kaggle), la forma más rápida y asertiva de obtener este código es utilizando **Git**. Git te permite "clonar" (copiar exactamente) todo este proyecto en tu entorno virtual en segundos.
+
+### ¿Por qué usar Git en lugar de subir archivos a mano?
+1.  **Velocidad**: No tienes que descargar y luego subir archivos. Todo sucede directamente en la nube.
+2.  **Integridad**: Te aseguras de tener todos los archivos necesarios y sus versiones correctas.
+3.  **Persistencia**: Si tu entorno de nube se reinicia, solo tienes que volver a ejecutar un comando para recuperar todo.
+
+---
+
 ## 1. Entendiendo los Archivos
 
 En este repositorio encontrarás dos archivos principales de código:
 
-1.  **`phi1_engram.py`**: Este es el "cerebro" del modelo. Contiene todas las fórmulas matemáticas y la estructura necesaria para que Phi-1 y Engram trabajen juntos. **No necesitas modificarlo**, solo asegúrate de que esté en la misma carpeta que tus scripts.
-2.  **`verify_phi_engram.py`**: Es un script de prueba. Su función es verificar que el modelo esté bien instalado y que pueda generar texto tanto de forma rápida (por bloques) como paso a paso (token por token).
+1.  **`phi1_engram.py`**: Este es el "cerebro" del modelo. Contiene todas las fórmulas matemáticas y la estructura necesaria para que Phi-1 y Engram trabajen juntos. **No necesitas modificarlo**.
+2.  **`verify_phi_engram.py`**: Es un script de prueba. Su función es verificar que el modelo esté bien instalado y que funcione perfectamente.
 
 ---
 
-## 2. Cómo probarlo en Google Colab (Recomendado para empezar)
+## 2. Cómo probarlo en Google Colab
 
-Google Colab te permite ejecutar código en la nube de forma gratuita. Sigue estos pasos exactos:
+Sigue estos pasos exactos y exhaustivos:
 
 1.  **Abre Google Colab**: Ve a [colab.research.google.com](https://colab.research.google.com).
 2.  **Crea un Notebook nuevo**: Haz clic en el botón "Nuevo cuaderno" (New notebook).
-3.  **Configura el entorno**:
-    *   Copia y pega este comando en la primera celda y presiona el botón de "Play" (o pulsa `Ctrl+Enter`):
-        ```bash
-        !pip install torch transformers tokenizers numpy sympy
-        ```
-4.  **Sube los archivos**:
-    *   En el menú de la izquierda, haz clic en el icono de la **carpeta**.
-    *   Arrastra los archivos `phi1_engram.py` y `verify_phi_engram.py` desde tu computadora al panel de la izquierda en Colab.
-5.  **Ejecuta la prueba**:
-    *   Crea una celda nueva abajo y escribe:
-        ```bash
-        !python verify_phi_engram.py
-        ```
-    *   Presiona "Play". Verás mensajes indicando que el modelo se está instanciando y verificando. Si ves un mensaje de éxito con un check verde (✅), ¡todo está perfecto!
+3.  **Paso A: Instalar librerías**: Copia y ejecuta este comando en la primera celda:
+    ```bash
+    !pip install torch transformers tokenizers numpy sympy
+    ```
+4.  **Paso B: Clonar el proyecto con Git**: Crea una celda nueva y ejecuta este comando (reemplaza la URL si es necesario):
+    ```bash
+    !git clone https://github.com/tu-usuario/Phi-1_engram.git
+    %cd Phi-1_engram
+    ```
+    *Nota: El símbolo `!` indica a Colab que ejecute un comando del sistema, y `%cd` cambia la carpeta de trabajo.*
+5.  **Paso C: Ejecutar la verificación**: Ejecuta este comando en otra celda:
+    ```bash
+    !python verify_phi_engram.py
+    ```
+    Si ves un mensaje de éxito con un check verde (✅), ¡el modelo está listo!
 
 ---
 
-## 3. Cómo usarlo en Kaggle (Para entrenamiento pesado)
+## 3. Cómo usarlo en Kaggle
 
-Kaggle es ideal porque ofrece GPUs (procesadores gráficos) muy potentes de forma gratuita por tiempo limitado.
+Kaggle es ideal para entrenamiento pesado. Sigue estas instrucciones detalladas:
 
-1.  **Inicia sesión**: Ve a [kaggle.com](https://www.kaggle.com) y crea una cuenta si no tienes una.
+1.  **Inicia sesión**: Ve a [kaggle.com](https://www.kaggle.com).
 2.  **Crea un Notebook**: Haz clic en `+ Create` -> `New Notebook`.
-3.  **Activa Internet y GPU**:
-    *   En el panel derecho ("Settings"), busca **Internet on** y actívalo (necesario para descargar el modelo base).
+3.  **Configura el entorno**:
+    *   En el panel derecho ("Settings"), activa **Internet on**.
     *   En **Accelerator**, selecciona **GPU T4 x2**.
-4.  **Instala las herramientas**:
-    *   En la primera celda escribe y ejecuta:
-        ```bash
-        !pip install torch transformers tokenizers numpy sympy
-        ```
-5.  **Carga el código**: Puedes copiar el contenido de `phi1_engram.py` directamente en una celda de Kaggle o subir el archivo usando el botón `+ Add Data` -> `Upload` (en la pestaña superior).
+4.  **Descarga el código con Git**: En la primera celda, escribe y ejecuta:
+    ```bash
+    !pip install torch transformers tokenizers numpy sympy
+    !git clone https://github.com/tu-usuario/Phi-1_engram.git
+    ```
+5.  **Entra en la carpeta**:
+    ```python
+    import os
+    os.chdir("/kaggle/working/Phi-1_engram")
+    ```
+6.  **Prueba el modelo**:
+    ```bash
+    !python verify_phi_engram.py
+    ```
 
 ---
 
 ## 4. Cómo integrarlo con Hugging Face
 
-Hugging Face es como el "GitHub" de la Inteligencia Artificial. Sirve para guardar y compartir tus modelos.
+Hugging Face es el repositorio central donde guardarás tus modelos entrenados.
 
 1.  **Crea una cuenta**: Regístrate en [huggingface.co](https://huggingface.co).
-2.  **Crea un Repositorio (Model)**:
-    *   Haz clic en tu perfil -> `New Model`.
-    *   Ponle un nombre (ej: `phi1-engram-test`).
-3.  **Sube tus archivos**:
-    *   Ve a la pestaña `Files and versions`.
-    *   Haz clic en `Add file` -> `Upload files`.
-    *   Sube `phi1_engram.py`.
-4.  **Uso desde cualquier lugar**:
-    *   Una vez subido, puedes cargar el modelo en cualquier computadora del mundo usando este código:
-        ```python
-        from transformers import AutoModelForCausalLM
-        # Reemplaza 'tu-usuario' por tu nombre real en Hugging Face
-        model = AutoModelForCausalLM.from_pretrained("tu-usuario/phi1-engram-test", trust_remote_code=True)
-        ```
+2.  **Uso desde cualquier lugar**: Una vez subido tu modelo, puedes cargarlo directamente así:
+    ```python
+    from transformers import AutoModelForCausalLM
+    # Reemplaza 'tu-usuario' por tu nombre real
+    model = AutoModelForCausalLM.from_pretrained("tu-usuario/phi1-engram", trust_remote_code=True)
+    ```
 
 ---
 
 ## 5. Ejemplo de "Uso Básico" Explicado
 
-Si quieres usar el modelo para generar texto por tu cuenta, aquí tienes un ejemplo que puedes copiar en Colab. Está explicado línea por línea:
+Aquí tienes un código que puedes copiar y pegar. Está diseñado para ser asertivo y directo:
 
 ```python
 import torch
-# Importamos las clases que creamos en phi1_engram.py
 from phi1_engram import PhiEngramConfig, PhiEngramForCausalLM
 from transformers import AutoTokenizer
 
-# 1. Definimos la 'receta' (configuración) del modelo
+# 1. Configuración: Definimos las características del modelo
 config = PhiEngramConfig(
-    hidden_size=256,        # Tamaño de las capas internas
-    num_hidden_layers=2,    # Número de capas del modelo
-    vocab_size=51200        # Tamaño del diccionario de palabras
+    hidden_size=256,
+    num_hidden_layers=2,
+    vocab_size=51200
 )
 
-# 2. Creamos el modelo físico basado en esa receta
+# 2. Creación: Construimos el modelo basado en la configuración
 model = PhiEngramForCausalLM(config)
 
-# 3. Preparamos el 'traductor' (tokenizer) para que el modelo entienda el texto
+# 3. Traducción: Preparamos el tokenizer oficial de Microsoft
 tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1")
 
-# 4. Convertimos una frase en números que el modelo puede procesar
+# 4. Procesamiento: Convertimos texto a números y pedimos un resultado
 texto = "Hola, mundo!"
 inputs = tokenizer(texto, return_tensors="pt")
 
-# 5. Le pedimos al modelo que procese los números y nos dé un resultado (logits)
-with torch.no_grad(): # Esto apaga el 'modo entrenamiento' para ahorrar memoria
+with torch.no_grad():
     outputs = model(**inputs)
 
-# 6. Imprimimos el tamaño del resultado
 print("¡Éxito! El modelo generó un tensor de tamaño:", outputs.logits.shape)
 ```
 
 ---
 
-## 6. Ciclo de Trabajo Recomendado (Flujo Pro)
+## 6. Ciclo de Trabajo Interrelacionado (El Flujo Ideal)
 
-Si quieres ser un experto, usa los tres recursos juntos:
+Para un desarrollo profesional en la nube, sigue este orden:
 
-1.  **Entrena en Kaggle**: Usa sus GPUs gratuitas para que el modelo aprenda.
-2.  **Guarda en Hugging Face**: Sube el resultado a tu perfil de Hugging Face para no perderlo.
-3.  **Prueba en Colab**: Descarga el modelo desde Hugging Face a Colab para hacer demos rápidas o compartirlo con amigos.
+1.  **GIT**: Usa Git para clonar este código en cualquier plataforma.
+2.  **KAGGLE**: Entrena el modelo usando sus GPUs potentes.
+3.  **HUGGING FACE**: Sube el modelo entrenado a tu Hub para guardarlo.
+4.  **COLAB**: Descarga tu modelo desde Hugging Face para mostrar resultados o hacer pruebas rápidas.
 
 ---
 
-## Próximos Pasos Técnicos
-Si ya dominas lo anterior, consulta la sección técnica en el archivo `phi1_engram.py` para aprender a cargar los pesos reales de Microsoft y empezar un entrenamiento formal (Fine-tuning).
+## 📚 Documentación Técnica Detallada
+
+Si eres un desarrollador avanzado o investigador, hemos preparado un documento exhaustivo que explica las ecuaciones matemáticas, la arquitectura de hashing y los detalles de integración:
+
+👉 **[Consulta la Documentación Técnica Completa aquí](./DOCUMENTACION_TECNICA.md)**
+
+---
+
+## 🛠️ Próximos Pasos Técnicos y Hoja de Ruta
+
+Para avanzar de este prototipo a un modelo entrenado y optimizado, consulta nuestra **Hoja de Ruta Detallada** que incluye:
+1.  **Bootstrapping**: Cómo cargar los pesos de Phi-1 manteniendo la memoria Engram.
+2.  **Fine-tuning Estratégico**: Fases de entrenamiento (Warm-up vs Conjunto).
+3.  **Optimizaciones de Memoria**: Implementación de Prefetching y CPU Offloading.
+4.  **Validación de Profundidad**: Uso de LogitLens y CKA.
+
+👉 **[Ver Hoja de Ruta en la Documentación Técnica](./DOCUMENTACION_TECNICA.md#7-próximos-pasos-técnicos-y-hoja-de-ruta)**

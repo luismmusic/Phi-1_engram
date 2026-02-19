@@ -14,9 +14,12 @@ from sympy import isprime
 
 # =============================================================================
 # 1. TOKENIZADOR COMPRIMIDO (CompressedTokenizer)
-# Esta clase se encarga de 'limpiar' y simplificar las palabras para que el
-# sistema de memoria Engram sea más eficiente. Por ejemplo, junta 'Hola' y
-# 'hola' para que el modelo sepa que son lo mismo.
+# Implementa la técnica de "Tokenizer Compression" descrita en la Sección 2.2 del paper.
+# Su objetivo es maximizar la densidad semántica mediante una función suryectiva P: V -> V'.
+# Colapsa múltiples IDs de tokens (que pueden ser semánticamente equivalentes pero
+# representados distinto, ej: " Apple" vs "apple") en identificadores canónicos.
+# Esto reduce el tamaño efectivo del vocabulario (aprox. 23% según el paper) y
+# mitiga la fragmentación de la memoria en patrones de n-gramas.
 # =============================================================================
 class CompressedTokenizer:
     def __init__(
@@ -91,9 +94,15 @@ def find_next_prime(start, seen_primes):
 
 # =============================================================================
 # 2. MAPEADOR DE HASHES (NgramHashMapping)
-# Calcula las 'direcciones de memoria' para grupos de palabras (n-gramas).
-# Es como el índice de un libro que le dice al modelo dónde buscar información
-# sobre una frase específica.
+# Implementa el "Multi-Head Hashing" (Sección 2.2). Gestiona la extracción de n-gramas
+# de sufijo y su mapeo a índices de tablas de embeddings mediante una función de
+# hash determinista (multiplicative-XOR).
+#
+# Características técnicas:
+# - Soporta múltiples órdenes de n-gramas (ej. 2-gramas, 3-gramas).
+# - Utiliza K cabezales de hash por cada orden para mitigar colisiones.
+# - El tamaño de cada tabla (M_n,k) es un número primo para mejorar la distribución.
+# - Es determinista: depende únicamente de la secuencia de entrada de tokens.
 # =============================================================================
 class NgramHashMapping:
     def __init__(
@@ -225,8 +234,10 @@ class NgramHashMapping:
 
 # =============================================================================
 # 3. EMBEDDINGS MULTI-CABEZAL (MultiHeadEmbedding)
-# Es el almacén físico de la memoria. Aquí se guardan los vectores que el
-# modelo recupera cuando reconoce un patrón de texto.
+# Almacén de "Static Priors". Implementa las tablas de embeddings E_{n,k} donde
+# residen los parámetros de la memoria condicional.
+# Utiliza offsets internos para indexar eficientemente múltiples cabezales de
+# diferentes tamaños en una única estructura de almacenamiento.
 # =============================================================================
 class MultiHeadEmbedding(nn.Module):
     def __init__(self, list_of_N: List[int], D: int):
@@ -254,8 +265,15 @@ class MultiHeadEmbedding(nn.Module):
 
 # =============================================================================
 # 4. CONVOLUCIÓN CORTA (ShortConv)
-# Refina la información recuperada de la memoria para que encaje bien con
-# el resto de la frase, analizando los tokens vecinos.
+# Implementa la "Short Depthwise Causal Convolution" (Ecuación 5).
+# Expande el campo receptivo de la memoria recuperada y añade no-linealidad.
+#
+# Detalles técnicos:
+# - Kernel size (w) típicamente = 4.
+# - Dilatación (δ) ajustada al orden máximo del n-grama.
+# - Utiliza RMSNorm y activación SiLU.
+# - Es causal: los resultados en el tiempo 't' solo dependen de t y su pasado.
+# - Incluye manejo de caché para mantener la consistencia en generación incremental.
 # =============================================================================
 class ShortConv(nn.Module):
     def __init__(
@@ -335,8 +353,16 @@ class ShortConv(nn.Module):
 
 # =============================================================================
 # 5. MÓDULO PHI-ENGRAM (PhiEngram)
-# El componente principal que une todo: busca en la memoria, decide qué parte
-# de esa memoria es útil (gating) y la procesa con la convolución.
+# El bloque de integración principal (Context-aware Gating + Fusion).
+# Realiza el producto punto entre el estado oculto (Query) y la memoria
+# recuperada (Key) para calcular un escalar de gating α_t (Ecuaciones 3 y 4).
+#
+# Lógica de Fusión:
+# 1. Recupera embeddings estáticos e_t.
+# 2. Calcula proyecciones k_t (Key) y v_t (Value).
+# 3. Aplica gating: α_t = sigmoid( (RMSNorm(h_t) · RMSNorm(k_t)) / sqrt(d) ).
+# 4. Modula el valor: v_tilde_t = α_t * v_t.
+# 5. Aplica ShortConv y conexión residual.
 # =============================================================================
 class PhiEngram(nn.Module):
     def __init__(self, config, layer_id, vocab_size_across_layers):
@@ -416,8 +442,14 @@ class PhiEngram(nn.Module):
 
 # =============================================================================
 # 6. CONFIGURACIÓN (PhiEngramConfig)
-# Define las opciones del modelo: cuántas capas tiene, qué tan grande es la
-# memoria, etc.
+# Extiende la configuración oficial de Microsoft Phi-1 para incluir los hiper-parámetros
+# específicos de Engram.
+#
+# Parámetros destacados:
+# - engram_layer_ids: Índices de las capas donde se inyecta el módulo Engram.
+# - engram_vocab_size: Lista con el tamaño de las tablas de hash por orden de n-grama.
+# - max_ngram_size: Longitud máxima de las secuencias de tokens recordadas.
+# - n_embed_per_ngram: Dimensión del vector de memoria recuperado.
 # =============================================================================
 class PhiEngramConfig(PhiConfig):
     model_type = "phi_engram"
@@ -456,7 +488,9 @@ class PhiEngramConfig(PhiConfig):
 
 # =============================================================================
 # 7. CAPA DEL DECODIFICADOR (PhiEngramDecoderLayer)
-# Modifica la capa estándar de Phi-1 para insertar el módulo Engram.
+# Implementa la integración de "Multi-branch Architecture" (Sección 2.4).
+# Inyecta el módulo PhiEngram de forma paralela a los componentes de atención (MLA)
+# y FFN, manteniendo la conexión residual. Gestiona el acceso al caché de convolución.
 # =============================================================================
 class PhiEngramDecoderLayer(PhiDecoderLayer):
     def __init__(self, config: PhiEngramConfig, layer_idx: int, vocab_size_across_layers: dict):
@@ -525,7 +559,13 @@ class PhiEngramDecoderLayer(PhiDecoderLayer):
 
 # =============================================================================
 # 8. CUERPO DEL MODELO (PhiEngramModel)
-# Une todas las capas y gestiona la entrada de datos.
+# Coordina la ejecución global. Implementa la optimización de rendimiento crítica:
+# calcula los hashes de n-gramas una sola vez para toda la secuencia y los
+# distribuye a las capas interesadas, minimizando transferencias CPU-GPU.
+#
+# Soporte Incremental:
+# Gestiona 'engram_tokens' en el objeto past_key_values para permitir el cálculo
+# correcto de n-gramas durante la generación token por token (model.generate()).
 # =============================================================================
 class PhiEngramModel(PhiModel):
     config_class = PhiEngramConfig
@@ -620,10 +660,17 @@ class PhiEngramModel(PhiModel):
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
 
-        # Pre-calculate hashes for all Engram layers once
+        # =====================================================================
+        # OPTIMIZACIÓN DE HASHING (Pre-calculado)
+        # Calculamos los hashes de n-gramas una sola vez para toda la secuencia.
+        # Esto evita recalcular lo mismo en cada capa que tenga un módulo Engram.
+        # =====================================================================
         all_layer_hashes = {}
         if input_ids is not None:
-            # Incremental generation support: maintain a small token cache for hashing
+            # Soporte para Generación Incremental (Auto-regresiva):
+            # Mantenemos un pequeño historial de tokens ('engram_tokens') en
+            # past_key_values para poder calcular los n-gramas de sufijo cuando
+            # solo nos llega 1 token nuevo.
             if use_cache and past_key_values is not None:
                 if not hasattr(past_key_values, "engram_tokens"):
                     # Initial pass: we use the whole input_ids

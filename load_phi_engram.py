@@ -24,7 +24,15 @@ def load_phi_1_with_engram(engram_layers=[1, 15]):
 
     # 3. Instanciamos nuestro modelo (inicializado aleatoriamente al principio)
     print(f"[3/4] Instanciando arquitectura Phi-1 + Engram...")
-    model = PhiEngramForCausalLM(config)
+
+    # Optimizamos para no agotar la RAM del sistema
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda":
+        torch.set_default_dtype(torch.float16)
+
+    model = PhiEngramForCausalLM(config).to(device)
+
+    torch.set_default_dtype(torch.float32)
 
     # 4. Cargamos los pesos oficiales del Hub
     print(f"[4/4] Cargando pesos oficiales de Microsoft (esto puede tardar)...")

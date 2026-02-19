@@ -24,7 +24,14 @@ def verify():
     # Usamos half precision si hay GPU para ser más eficientes
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float16 if device == "cuda" else torch.float32
+
+    if device == "cuda":
+        torch.set_default_dtype(torch.float16)
+
     model = PhiEngramForCausalLM(config).to(device=device, dtype=dtype)
+
+    torch.set_default_dtype(torch.float32)
+
     model.eval() # Ponemos el modelo en modo lectura (evaluación)
 
     # 3. Preparación del texto

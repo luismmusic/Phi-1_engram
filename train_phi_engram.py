@@ -30,6 +30,7 @@ def train_model():
 
     # Cargar modelo y pesos de Phi-1
     # Nota: En una ejecución real, load_phi_1_with_engram descargará >2GB de pesos.
+    # Usamos set_default_dtype internamente en load_phi_1_with_engram para ahorrar RAM.
     model = load_phi_1_with_engram().to(device)
     tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1")
     if tokenizer.pad_token is None:

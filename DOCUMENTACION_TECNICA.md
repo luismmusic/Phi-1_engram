@@ -87,3 +87,43 @@ El mayor desafío técnico fue asegurar que `model.generate()` funcionara correc
 - **Hashing**: $z_{t,n,k} = \varphi_{n,k}(g_{t,n})$ donde $\varphi$ es la función XOR-multiplicativa.
 
 Esta implementación asegura que Phi-1 se beneficie de la "profundidad efectiva" adicional sin el coste computacional de añadir más capas de atención tradicionales.
+
+---
+
+## 7. Próximos Pasos Técnicos y Hoja de Ruta
+
+Para llevar esta implementación de un prototipo verificado a un modelo productivo y entrenado, se deben seguir estos pasos exhaustivos:
+
+### 7.1 Carga Progresiva de Pesos (Bootstrapping)
+El modelo `PhiEngramForCausalLM` nace con el "backbone" (Phi-1) y la "memoria" (Engram). Para no perder el conocimiento previo de Microsoft:
+
+1.  **Cargar Pesos del Backbone**: Utilizar `load_state_dict` con `strict=False` para cargar los pesos oficiales de Phi-1. Los módulos de Engram se ignorarán y permanecerán inicializados aleatoriamente.
+2.  **Inicialización de Engram**:
+    - Las tablas de embeddings deben inicializarse con una varianza pequeña (ej. `initializer_range=0.02`).
+    - Las proyecciones de gating y valor deben ser inicializadas de forma que el gate $\alpha_t$ sea pequeño al principio, permitiendo que el backbone tome el control inicial mientras Engram aprende.
+
+### 7.2 Estrategia de Entrenamiento (Sparsity-Aware Fine-tuning)
+Engram no es un módulo "plug-and-play" que funcione sin entrenamiento. Requiere un proceso de fine-tuning específico:
+
+-   **Fase 1: Warm-up de Memoria (Frozen Backbone)**:
+    - Congelar todos los parámetros de Phi-1.
+    - Entrenar únicamente las tablas de embeddings de Engram y sus capas de proyección (`key_projs`, `value_proj`).
+    - **Objetivo**: Que el modelo aprenda a mapear n-gramas a conceptos útiles sin distorsionar las representaciones internas de Phi-1.
+-   **Fase 2: Fine-tuning Conjunto (Unfrozen)**:
+    - Descongelar todo el modelo.
+    - Utilizar una tasa de aprendizaje (Learning Rate) para Engram que sea $5 \times$ superior a la del backbone.
+    - Usar el optimizador **Adam** para los embeddings y **Muon** (si es posible) para las capas densas del backbone, siguiendo las recomendaciones de DeepSeek.
+
+### 7.3 Optimización de Infraestructura: Prefetching y Offloading
+En el paper original, se menciona que las tablas de Engram pueden ser masivas (superando la capacidad de la GPU).
+
+-   **Implementación de Prefetching**: Dado que el hashing de n-gramas es determinista y solo depende de los tokens de entrada, se puede calcular el hash de la capa $L+n$ mientras la GPU aún procesa la capa $L$.
+-   **Host Memory Offloading**: Mover las tablas de n-gramas a la RAM del sistema (CPU) y usar transferencias asíncronas vía PCIe para traer solo los vectores necesarios para el batch actual. Esto permite escalar el conocimiento del modelo a terabytes sin comprar más GPUs.
+
+### 7.4 Evaluación de la "Profundidad Efectiva"
+Para validar técnicamente la mejora, se deben realizar análisis de:
+1.  **LogitLens**: Comparar la velocidad de convergencia de las predicciones entre Phi-1 puro y Phi-1 Engram.
+2.  **CKA (Centered Kernel Alignment)**: Verificar si las capas tempranas de Phi-1 Engram se alinean representacionalmente con las capas tardías de Phi-1 estándar, confirmando que Engram está haciendo el "trabajo sucio" de reconstrucción de entidades.
+
+### 7.5 Despliegue en el Hugging Face Hub
+Para que el modelo sea cargable mediante `AutoModel.from_pretrained()`, se debe crear un archivo `configuration_phi_engram.py` y `modeling_phi_engram.py` dentro del repositorio del Hub, registrando las clases mediante `AutoConfig.register()` y `AutoModel.register()`.

@@ -141,5 +141,12 @@ Si eres un desarrollador avanzado o investigador, hemos preparado un documento e
 
 ---
 
-## Próximos Pasos Técnicos
-Consulta el archivo `DOCUMENTACION_TECNICA.md` y los comentarios en `phi1_engram.py` para detalles sobre el "fine-tuning" y cómo cargar los pesos oficiales de Microsoft Phi-1.
+## 🛠️ Próximos Pasos Técnicos y Hoja de Ruta
+
+Para avanzar de este prototipo a un modelo entrenado y optimizado, consulta nuestra **Hoja de Ruta Detallada** que incluye:
+1.  **Bootstrapping**: Cómo cargar los pesos de Phi-1 manteniendo la memoria Engram.
+2.  **Fine-tuning Estratégico**: Fases de entrenamiento (Warm-up vs Conjunto).
+3.  **Optimizaciones de Memoria**: Implementación de Prefetching y CPU Offloading.
+4.  **Validación de Profundidad**: Uso de LogitLens y CKA.
+
+👉 **[Ver Hoja de Ruta en la Documentación Técnica](./DOCUMENTACION_TECNICA.md#7-próximos-pasos-técnicos-y-hoja-de-ruta)**

@@ -400,9 +400,17 @@ class PhiEngramConfig(PhiConfig):
         engram_seed: int = 0,
         engram_kernel_size: int = 4,
         hc_mult: int = 1,
+        pad_token_id: int = None,
+        bos_token_id: int = 1,
+        eos_token_id: int = 2,
         **kwargs
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            pad_token_id=pad_token_id,
+            bos_token_id=bos_token_id,
+            eos_token_id=eos_token_id,
+            **kwargs
+        )
         self.engram_vocab_size = engram_vocab_size
         self.max_ngram_size = max_ngram_size
         self.n_embed_per_ngram = n_embed_per_ngram

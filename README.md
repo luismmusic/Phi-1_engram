@@ -24,3 +24,10 @@ Puedes ejecutar el script de verificación para confirmar que el modelo funciona
 ```bash
 python verify_phi_engram.py
 ```
+
+## Orígenes y Referencias
+Esta implementación integra:
+- **Microsoft Phi-1**: Basado en la arquitectura oficial soportada por la biblioteca `transformers`.
+- **DeepSeek Engram**: Lógica adaptada del paper "Conditional Memory via Scalable Lookup" (2026).
+
+*Nota: No se clonaron los repositorios externos para asegurar una implementación optimizada, portátil y compatible con la generación incremental paso a paso.*

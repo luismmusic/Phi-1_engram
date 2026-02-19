@@ -12,6 +12,12 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from tokenizers import normalizers, Regex
 from sympy import isprime
 
+# =============================================================================
+# 1. TOKENIZADOR COMPRIMIDO (CompressedTokenizer)
+# Esta clase se encarga de 'limpiar' y simplificar las palabras para que el
+# sistema de memoria Engram sea más eficiente. Por ejemplo, junta 'Hola' y
+# 'hola' para que el modelo sepa que son lo mismo.
+# =============================================================================
 class CompressedTokenizer:
     def __init__(
         self,
@@ -75,6 +81,7 @@ class CompressedTokenizer:
     def __call__(self, input_ids):
         return self._compress(input_ids)
 
+# Función auxiliar para encontrar números primos (necesario para el hashing)
 def find_next_prime(start, seen_primes):
     candidate = start + 1
     while True:
@@ -82,6 +89,12 @@ def find_next_prime(start, seen_primes):
             return candidate
         candidate += 1
 
+# =============================================================================
+# 2. MAPEADOR DE HASHES (NgramHashMapping)
+# Calcula las 'direcciones de memoria' para grupos de palabras (n-gramas).
+# Es como el índice de un libro que le dice al modelo dónde buscar información
+# sobre una frase específica.
+# =============================================================================
 class NgramHashMapping:
     def __init__(
         self,
@@ -210,6 +223,11 @@ class NgramHashMapping:
             hash_ids_for_all_layers[layer_id] = self._get_ngram_hashes(compressed_ids, layer_id=layer_id)
         return hash_ids_for_all_layers
 
+# =============================================================================
+# 3. EMBEDDINGS MULTI-CABEZAL (MultiHeadEmbedding)
+# Es el almacén físico de la memoria. Aquí se guardan los vectores que el
+# modelo recupera cuando reconoce un patrón de texto.
+# =============================================================================
 class MultiHeadEmbedding(nn.Module):
     def __init__(self, list_of_N: List[int], D: int):
         super().__init__()
@@ -234,6 +252,11 @@ class MultiHeadEmbedding(nn.Module):
         # output: [B, L, num_heads, D]
         return output
 
+# =============================================================================
+# 4. CONVOLUCIÓN CORTA (ShortConv)
+# Refina la información recuperada de la memoria para que encaje bien con
+# el resto de la frase, analizando los tokens vecinos.
+# =============================================================================
 class ShortConv(nn.Module):
     def __init__(
         self,
@@ -310,6 +333,11 @@ class ShortConv(nn.Module):
 
         return y, new_cache
 
+# =============================================================================
+# 5. MÓDULO PHI-ENGRAM (PhiEngram)
+# El componente principal que une todo: busca en la memoria, decide qué parte
+# de esa memoria es útil (gating) y la procesa con la convolución.
+# =============================================================================
 class PhiEngram(nn.Module):
     def __init__(self, config, layer_id, vocab_size_across_layers):
         super().__init__()
@@ -386,6 +414,11 @@ class PhiEngram(nn.Module):
 
         return output, new_cache
 
+# =============================================================================
+# 6. CONFIGURACIÓN (PhiEngramConfig)
+# Define las opciones del modelo: cuántas capas tiene, qué tan grande es la
+# memoria, etc.
+# =============================================================================
 class PhiEngramConfig(PhiConfig):
     model_type = "phi_engram"
 
@@ -421,6 +454,10 @@ class PhiEngramConfig(PhiConfig):
         self.engram_kernel_size = engram_kernel_size
         self.hc_mult = hc_mult
 
+# =============================================================================
+# 7. CAPA DEL DECODIFICADOR (PhiEngramDecoderLayer)
+# Modifica la capa estándar de Phi-1 para insertar el módulo Engram.
+# =============================================================================
 class PhiEngramDecoderLayer(PhiDecoderLayer):
     def __init__(self, config: PhiEngramConfig, layer_idx: int, vocab_size_across_layers: dict):
         super().__init__(config, layer_idx)
@@ -486,6 +523,10 @@ class PhiEngramDecoderLayer(PhiDecoderLayer):
 
         return outputs
 
+# =============================================================================
+# 8. CUERPO DEL MODELO (PhiEngramModel)
+# Une todas las capas y gestiona la entrada de datos.
+# =============================================================================
 class PhiEngramModel(PhiModel):
     config_class = PhiEngramConfig
 
@@ -643,6 +684,10 @@ class PhiEngramModel(PhiModel):
             attentions=all_self_attns,
         )
 
+# =============================================================================
+# 9. MODELO FINAL (PhiEngramForCausalLM)
+# Es la clase que usarás tú. Permite cargar el modelo y generar texto.
+# =============================================================================
 class PhiEngramForCausalLM(PhiForCausalLM):
     config_class = PhiEngramConfig
 

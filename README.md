@@ -1,190 +1,127 @@
-# Phi-1 Engram
+# Microsoft Phi-1 con DeepSeek Engram: Guía Completa para Principiantes
 
-Esta es una implementación de Microsoft Phi-1 que incorpora el módulo **Engram** de DeepSeek.
+Esta guía te enseñará, paso a paso y sin omitir detalles, cómo utilizar esta versión avanzada del modelo de lenguaje **Phi-1** que incluye el módulo **Engram** de DeepSeek. Engram permite al modelo tener una "memoria" eficiente para patrones de texto repetitivos, mejorando su capacidad sin hacerlo más lento.
 
-## Características
-- Integración del módulo Engram para memoria de n-gramas condicional.
-- Arquitectura compatible con los pesos de Microsoft Phi-1.
-- Implementación completa de `CompressedTokenizer`, `NgramHashMapping` y el mecanismo de gating.
+---
 
-## Uso
-Para instanciar el modelo:
+## 1. Entendiendo los Archivos
+
+En este repositorio encontrarás dos archivos principales de código:
+
+1.  **`phi1_engram.py`**: Este es el "cerebro" del modelo. Contiene todas las fórmulas matemáticas y la estructura necesaria para que Phi-1 y Engram trabajen juntos. **No necesitas modificarlo**, solo asegúrate de que esté en la misma carpeta que tus scripts.
+2.  **`verify_phi_engram.py`**: Es un script de prueba. Su función es verificar que el modelo esté bien instalado y que pueda generar texto tanto de forma rápida (por bloques) como paso a paso (token por token).
+
+---
+
+## 2. Cómo probarlo en Google Colab (Recomendado para empezar)
+
+Google Colab te permite ejecutar código en la nube de forma gratuita. Sigue estos pasos exactos:
+
+1.  **Abre Google Colab**: Ve a [colab.research.google.com](https://colab.research.google.com).
+2.  **Crea un Notebook nuevo**: Haz clic en el botón "Nuevo cuaderno" (New notebook).
+3.  **Configura el entorno**:
+    *   Copia y pega este comando en la primera celda y presiona el botón de "Play" (o pulsa `Ctrl+Enter`):
+        ```bash
+        !pip install torch transformers tokenizers numpy sympy
+        ```
+4.  **Sube los archivos**:
+    *   En el menú de la izquierda, haz clic en el icono de la **carpeta**.
+    *   Arrastra los archivos `phi1_engram.py` y `verify_phi_engram.py` desde tu computadora al panel de la izquierda en Colab.
+5.  **Ejecuta la prueba**:
+    *   Crea una celda nueva abajo y escribe:
+        ```bash
+        !python verify_phi_engram.py
+        ```
+    *   Presiona "Play". Verás mensajes indicando que el modelo se está instanciando y verificando. Si ves un mensaje de éxito con un check verde (✅), ¡todo está perfecto!
+
+---
+
+## 3. Cómo usarlo en Kaggle (Para entrenamiento pesado)
+
+Kaggle es ideal porque ofrece GPUs (procesadores gráficos) muy potentes de forma gratuita por tiempo limitado.
+
+1.  **Inicia sesión**: Ve a [kaggle.com](https://www.kaggle.com) y crea una cuenta si no tienes una.
+2.  **Crea un Notebook**: Haz clic en `+ Create` -> `New Notebook`.
+3.  **Activa Internet y GPU**:
+    *   En el panel derecho ("Settings"), busca **Internet on** y actívalo (necesario para descargar el modelo base).
+    *   En **Accelerator**, selecciona **GPU T4 x2**.
+4.  **Instala las herramientas**:
+    *   En la primera celda escribe y ejecuta:
+        ```bash
+        !pip install torch transformers tokenizers numpy sympy
+        ```
+5.  **Carga el código**: Puedes copiar el contenido de `phi1_engram.py` directamente en una celda de Kaggle o subir el archivo usando el botón `+ Add Data` -> `Upload` (en la pestaña superior).
+
+---
+
+## 4. Cómo integrarlo con Hugging Face
+
+Hugging Face es como el "GitHub" de la Inteligencia Artificial. Sirve para guardar y compartir tus modelos.
+
+1.  **Crea una cuenta**: Regístrate en [huggingface.co](https://huggingface.co).
+2.  **Crea un Repositorio (Model)**:
+    *   Haz clic en tu perfil -> `New Model`.
+    *   Ponle un nombre (ej: `phi1-engram-test`).
+3.  **Sube tus archivos**:
+    *   Ve a la pestaña `Files and versions`.
+    *   Haz clic en `Add file` -> `Upload files`.
+    *   Sube `phi1_engram.py`.
+4.  **Uso desde cualquier lugar**:
+    *   Una vez subido, puedes cargar el modelo en cualquier computadora del mundo usando este código:
+        ```python
+        from transformers import AutoModelForCausalLM
+        # Reemplaza 'tu-usuario' por tu nombre real en Hugging Face
+        model = AutoModelForCausalLM.from_pretrained("tu-usuario/phi1-engram-test", trust_remote_code=True)
+        ```
+
+---
+
+## 5. Ejemplo de "Uso Básico" Explicado
+
+Si quieres usar el modelo para generar texto por tu cuenta, aquí tienes un ejemplo que puedes copiar en Colab. Está explicado línea por línea:
+
 ```python
+import torch
+# Importamos las clases que creamos en phi1_engram.py
 from phi1_engram import PhiEngramConfig, PhiEngramForCausalLM
+from transformers import AutoTokenizer
 
+# 1. Definimos la 'receta' (configuración) del modelo
 config = PhiEngramConfig(
-    engram_layer_ids=[1, 15], # Capas donde se inserta Engram
-    # ... otros parámetros de Phi-1
+    hidden_size=256,        # Tamaño de las capas internas
+    num_hidden_layers=2,    # Número de capas del modelo
+    vocab_size=51200        # Tamaño del diccionario de palabras
 )
-model = PhiEngramForCausalLM(config)
-```
 
-## Verificación
-Puedes ejecutar el script de verificación para confirmar que el modelo funciona correctamente:
-```bash
-python verify_phi_engram.py
-```
-
-## Orígenes y Referencias
-Esta implementación integra:
-- **Microsoft Phi-1**: Basado en la arquitectura oficial soportada por la biblioteca `transformers`.
-- **DeepSeek Engram**: Lógica adaptada del paper "Conditional Memory via Scalable Lookup" (2026).
-
-*Nota: No se clonaron los repositorios externos para asegurar una implementación optimizada, portátil y compatible con la generación incremental paso a paso.*
-
-## Próximos Pasos (Next Steps)
-
-Para aprovechar al máximo esta arquitectura, se recomiendan los siguientes pasos:
-
-### 1. Carga de Pesos Pre-entrenados
-El backbone de Phi-1 puede cargarse con pesos oficiales de Microsoft, mientras que los módulos de Engram se inicializarán aleatoriamente.
-```python
-from phi1_engram import PhiEngramForCausalLM, PhiEngramConfig
-from transformers import AutoConfig
-
-# Cargar configuración base
-base_config = AutoConfig.from_pretrained("microsoft/phi-1")
-# Combinar con parámetros de Engram
-config = PhiEngramConfig(**base_config.to_dict(), engram_layer_ids=[1, 15])
-# Instanciar modelo
+# 2. Creamos el modelo físico basado en esa receta
 model = PhiEngramForCausalLM(config)
 
-# Opcional: Cargar pesos del backbone desde el modelo original
-# state_dict = torch.load("path_to_phi1_weights")
-# model.load_state_dict(state_dict, strict=False)
+# 3. Preparamos el 'traductor' (tokenizer) para que el modelo entienda el texto
+tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1")
+
+# 4. Convertimos una frase en números que el modelo puede procesar
+texto = "Hola, mundo!"
+inputs = tokenizer(texto, return_tensors="pt")
+
+# 5. Le pedimos al modelo que procese los números y nos dé un resultado (logits)
+with torch.no_grad(): # Esto apaga el 'modo entrenamiento' para ahorrar memoria
+    outputs = model(**inputs)
+
+# 6. Imprimimos el tamaño del resultado
+print("¡Éxito! El modelo generó un tensor de tamaño:", outputs.logits.shape)
 ```
 
-### 2. Entrenamiento / Fine-tuning
-Dado que los módulos de Engram son nuevos, requieren entrenamiento.
-- **Estrategia A (Warm-up)**: Congelar el backbone y entrenar solo las tablas de embeddings de Engram y sus proyecciones.
-- **Estrategia B (Full Fine-tuning)**: Entrenar todo el modelo en un corpus de conocimiento denso (ej. Wikipedia o libros) para que Engram aprenda los patrones de n-gramas.
+---
 
-### 3. Optimización de Memoria (Offloading)
-Si el vocabulario de Engram crece demasiado, implementa el "prefetching" mencionado en el paper de DeepSeek para mover las tablas de embeddings a la RAM de la CPU, liberando VRAM en la GPU.
+## 6. Ciclo de Trabajo Recomendado (Flujo Pro)
 
-### 4. Evaluación Comparativa
-Evaluar en benchmarks de razonamiento (BBH) y matemáticas (MATH) para verificar la ganancia de "profundidad efectiva" descrita en el whitepaper técnico.
+Si quieres ser un experto, usa los tres recursos juntos:
 
-## Ejecución en Google Colab
+1.  **Entrena en Kaggle**: Usa sus GPUs gratuitas para que el modelo aprenda.
+2.  **Guarda en Hugging Face**: Sube el resultado a tu perfil de Hugging Face para no perderlo.
+3.  **Prueba en Colab**: Descarga el modelo desde Hugging Face a Colab para hacer demos rápidas o compartirlo con amigos.
 
-Para probar esta implementación en Google Colab, sigue estos pasos:
+---
 
-1. **Instalar dependencias**:
-   Crea una celda y ejecuta:
-   ```bash
-   !pip install torch transformers tokenizers numpy sympy
-   ```
-
-2. **Cargar los archivos**:
-   Puedes clonar este repositorio (si está en GitHub) o subir manualmente los archivos `phi1_engram.py` y `verify_phi_engram.py`.
-
-   Si usas `git`:
-   ```bash
-   !git clone <URL_DE_TU_REPOSITORIO>
-   %cd <NOMBRE_DEL_REPOSITORIO>
-   ```
-
-3. **Ejecutar Verificación**:
-   Para confirmar que todo funciona correctamente en el entorno de Colab:
-   ```bash
-   !python verify_phi_engram.py
-   ```
-
-4. **Código de ejemplo rápido**:
-   Puedes copiar este código directamente en una celda de Colab para una prueba inmediata:
-   ```python
-   import torch
-   from phi1_engram import PhiEngramConfig, PhiEngramForCausalLM
-   from transformers import AutoTokenizer
-
-   # Configuración de prueba
-   config = PhiEngramConfig(
-       hidden_size=256,
-       num_hidden_layers=2,
-       vocab_size=51200
-   )
-   model = PhiEngramForCausalLM(config)
-
-   tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-1")
-   inputs = tokenizer("Hello Engram!", return_tensors="pt")
-
-   with torch.no_grad():
-       outputs = model(**inputs)
-   print("Logits shape:", outputs.logits.shape)
-   ```
-
-## Ejecución en Kaggle
-
-En Kaggle, el proceso es muy similar al de Colab, con algunas configuraciones adicionales:
-
-1. **Configuración del Kernel**:
-   - En el panel derecho (**Settings**), asegúrate de que **Internet on** esté activado.
-   - Selecciona un **Accelerator**: GPU T4 x2 o GPU P100 son recomendados.
-
-2. **Instalar dependencias**:
-   ```bash
-   !pip install torch transformers tokenizers numpy sympy
-   ```
-
-3. **Uso de GPU**:
-   Asegúrate de mover el modelo y los datos a la GPU para un rendimiento óptimo:
-   ```python
-   device = "cuda" if torch.cuda.is_available() else "cpu"
-   model.to(device)
-   inputs = {k: v.to(device) for k, v in inputs.items()}
-   ```
-
-## Integración con Hugging Face Hub
-
-Puedes subir este modelo al Hub para que otros lo usen fácilmente:
-
-1. **Subir archivos**:
-   Asegúrate de subir `phi1_engram.py` junto con los archivos de pesos (`pytorch_model.bin` o `model.safetensors`).
-
-2. **Configuración para `trust_remote_code`**:
-   Para que otros puedan cargar tu modelo sin instalar localmente el archivo `.py`, asegúrate de registrar las clases en tu script o usar la opción `trust_remote_code=True`.
-
-3. **Ejemplo de carga desde el Hub**:
-   ```python
-   from transformers import AutoModelForCausalLM, AutoConfig
-   from phi1_engram import PhiEngramConfig, PhiEngramForCausalLM
-
-   # Suponiendo que el modelo está en 'tu-usuario/phi1-engram'
-   model = AutoModelForCausalLM.from_pretrained(
-       "tu-usuario/phi1-engram",
-       trust_remote_code=True
-   )
-   ```
-   *Nota: Para que el Hub reconozca automáticamente las clases, debes incluir las referencias adecuadas en el archivo `config.json` del repositorio.*
-
-## Flujo de Trabajo Interrelacionado (HF + Kaggle + Colab)
-
-Para un desarrollo profesional, se recomienda el siguiente ecosistema conectado:
-
-### 1. Hugging Face como Hub Central (Source of Truth)
-- Almacena aquí tu script `phi1_engram.py` y los pesos resultantes.
-- Utiliza el Hub para versionar tus experimentos.
-- **Comando clave**: `huggingface-cli login` para autenticarte en cualquier entorno.
-
-### 2. Kaggle para Entrenamiento Pesado
-- **Por qué**: Kaggle ofrece 30 horas semanales de GPU (T4 x2 o P100) y persistencia de datos local más estable.
-- **Acción**:
-  1. Clona tu repositorio de HF en un Notebook de Kaggle.
-  2. Ejecuta el entrenamiento de los módulos de Engram.
-  3. Al terminar, guarda el modelo y súbelo de nuevo al Hub:
-     ```python
-     model.push_to_hub("tu-usuario/phi1-engram-trained")
-     tokenizer.push_to_hub("tu-usuario/phi1-engram-trained")
-     ```
-
-### 3. Google Colab para Prototipado e Inferencia
-- **Por qué**: Colab es ideal para pruebas rápidas y compartir demos interactivas.
-- **Acción**:
-  1. Conéctate al Hub para descargar la versión que entrenaste en Kaggle:
-     ```python
-     model = AutoModelForCausalLM.from_pretrained("tu-usuario/phi1-engram-trained", trust_remote_code=True)
-     ```
-  2. Realiza inferencia o pruebas de "profundidad efectiva" con visualizaciones rápidas.
-
-### Resumen del ciclo:
-`Kaggle (Entrena) -> Hugging Face (Almacena/Versiona) -> Colab (Prueba/Comparte)`
+## Próximos Pasos Técnicos
+Si ya dominas lo anterior, consulta la sección técnica en el archivo `phi1_engram.py` para aprender a cargar los pesos reales de Microsoft y empezar un entrenamiento formal (Fine-tuning).

@@ -156,3 +156,35 @@ Puedes subir este modelo al Hub para que otros lo usen fácilmente:
    )
    ```
    *Nota: Para que el Hub reconozca automáticamente las clases, debes incluir las referencias adecuadas en el archivo `config.json` del repositorio.*
+
+## Flujo de Trabajo Interrelacionado (HF + Kaggle + Colab)
+
+Para un desarrollo profesional, se recomienda el siguiente ecosistema conectado:
+
+### 1. Hugging Face como Hub Central (Source of Truth)
+- Almacena aquí tu script `phi1_engram.py` y los pesos resultantes.
+- Utiliza el Hub para versionar tus experimentos.
+- **Comando clave**: `huggingface-cli login` para autenticarte en cualquier entorno.
+
+### 2. Kaggle para Entrenamiento Pesado
+- **Por qué**: Kaggle ofrece 30 horas semanales de GPU (T4 x2 o P100) y persistencia de datos local más estable.
+- **Acción**:
+  1. Clona tu repositorio de HF en un Notebook de Kaggle.
+  2. Ejecuta el entrenamiento de los módulos de Engram.
+  3. Al terminar, guarda el modelo y súbelo de nuevo al Hub:
+     ```python
+     model.push_to_hub("tu-usuario/phi1-engram-trained")
+     tokenizer.push_to_hub("tu-usuario/phi1-engram-trained")
+     ```
+
+### 3. Google Colab para Prototipado e Inferencia
+- **Por qué**: Colab es ideal para pruebas rápidas y compartir demos interactivas.
+- **Acción**:
+  1. Conéctate al Hub para descargar la versión que entrenaste en Kaggle:
+     ```python
+     model = AutoModelForCausalLM.from_pretrained("tu-usuario/phi1-engram-trained", trust_remote_code=True)
+     ```
+  2. Realiza inferencia o pruebas de "profundidad efectiva" con visualizaciones rápidas.
+
+### Resumen del ciclo:
+`Kaggle (Entrena) -> Hugging Face (Almacena/Versiona) -> Colab (Prueba/Comparte)`

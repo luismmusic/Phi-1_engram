@@ -602,6 +602,59 @@ class PhiEngramModel(PhiModel):
              for layer_idx in range(config.num_hidden_layers)]
         )
 
+    def _prepare_causal_mask(self, attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions, position_ids):
+        """
+        Versión robusta para crear la máscara causal, compatible con diferentes
+        versiones de la biblioteca 'transformers'.
+        """
+        # Caso 1: La versión de transformers tiene _update_causal_mask como método de clase base
+        if hasattr(self, "_update_causal_mask"):
+            return self._update_causal_mask(
+                attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions
+            )
+
+        # Caso 2: Se usa la función independiente create_causal_mask (v4.4x y superiores)
+        # Intentamos varias firmas para maximizar la compatibilidad con diferentes versiones de transformers
+        try:
+            # Firma completa con nombres de argumentos (v5.x / v4.4x recientes)
+            return create_causal_mask(
+                config=self.config,
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                cache_position=cache_position,
+                past_key_values=past_key_values,
+                position_ids=position_ids,
+            )
+        except TypeError:
+            try:
+                # Firma sin nombres de argumentos (posicional)
+                return create_causal_mask(
+                    self.config,
+                    inputs_embeds,
+                    attention_mask,
+                    cache_position,
+                    past_key_values,
+                    position_ids,
+                )
+            except TypeError:
+                try:
+                    # Firma sin position_ids
+                    return create_causal_mask(
+                        self.config,
+                        inputs_embeds,
+                        attention_mask,
+                        cache_position,
+                        past_key_values,
+                    )
+                except:
+                    # Último recurso: intentar sin config si es una versión muy antigua/específica
+                    return create_causal_mask(
+                        inputs_embeds,
+                        attention_mask,
+                        cache_position,
+                        past_key_values,
+                    )
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -641,13 +694,9 @@ class PhiEngramModel(PhiModel):
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
-        causal_mask = create_causal_mask(
-            config=self.config,
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            cache_position=cache_position,
-            past_key_values=past_key_values,
-            position_ids=position_ids,
+        # Usamos el método robusto para evitar errores de compatibilidad en Colab
+        causal_mask = self._prepare_causal_mask(
+            attention_mask, inputs_embeds, cache_position, past_key_values, output_attentions, position_ids
         )
 
         inputs_embeds = self.embed_dropout(inputs_embeds)

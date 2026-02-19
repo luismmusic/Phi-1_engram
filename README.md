@@ -150,3 +150,29 @@ Para avanzar de este prototipo a un modelo entrenado y optimizado, consulta nues
 4.  **Validación de Profundidad**: Uso de LogitLens y CKA.
 
 👉 **[Ver Hoja de Ruta en la Documentación Técnica](./DOCUMENTACION_TECNICA.md#7-próximos-pasos-técnicos-y-hoja-de-ruta)**
+
+---
+
+## 🎓 Tutorial: Carga de Pesos y Entrenamiento
+
+Para usar el modelo real con el conocimiento de Microsoft, sigue este flujo de trabajo completo:
+
+### 1. Cargar Pesos Oficiales
+Ejecuta el script `load_phi_engram.py`. Este script descargará los pesos de Phi-1 (aprox. 2.6GB) y los inyectará en la nueva arquitectura. Las partes de Engram se mantendrán nuevas (inicializadas aleatoriamente) listas para aprender.
+```bash
+python load_phi_engram.py
+```
+
+### 2. Entrenamiento en Dos Fases
+El archivo `train_phi_engram.py` contiene la lógica para entrenar el modelo correctamente:
+
+- **Fase 1 (Warm-up)**: Se congela el "cerebro" (Phi-1) y solo se entrena la "memoria" (Engram). Esto evita que el modelo olvide lo que ya sabe mientras se adapta a la nueva estructura.
+- **Fase 2 (Joint Fine-tuning)**: Se entrena todo el modelo. Engram usa un Learning Rate 5 veces más alto para capturar patrones rápidamente, mientras que Phi-1 se ajusta suavemente.
+
+**Para iniciar el entrenamiento**:
+```bash
+python train_phi_engram.py
+```
+
+### 3. Guardar y Compartir
+Al finalizar, el script creará una carpeta `phi1-engram-trained` con todo lo necesario para subirlo a Hugging Face o usarlo en tus proyectos.

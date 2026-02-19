@@ -176,3 +176,20 @@ python train_phi_engram.py
 
 ### 3. Guardar y Compartir
 Al finalizar, el script creará una carpeta `phi1-engram-trained` con todo lo necesario para subirlo a Hugging Face o usarlo en tus proyectos.
+
+---
+
+## 💬 Cómo Hablar con el Modelo (Modo Chat)
+
+Si quieres probar la capacidad conversacional del modelo, utiliza el script interactivo:
+
+1.  **Ejecuta el Chat**:
+    ```bash
+    python chat_phi_engram.py
+    ```
+2.  **Cómo interactuar**:
+    - El script te pedirá que escribas un mensaje: `👤 Tú:`.
+    - Escribe tu pregunta y presiona `Enter`.
+    - El modelo responderá como `🤖 Phi-Engram:`.
+3.  **Consejo de experto**:
+    Como Phi-1 es un modelo base (no entrenado específicamente para chat), funciona mejor si le haces preguntas directas o le pides completar frases.

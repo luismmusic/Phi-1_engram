@@ -144,3 +144,8 @@ Este script automatiza el **Weight Mapping**. Dado que la estructura de capas ha
 Implementa el algoritmo de **Warm-up de Memoria**:
 1.  **Iteración de Gradientes**: Utiliza `named_modules()` para identificar y habilitar `requires_grad = True` solo en los sub-módulos que contienen la palabra "engram".
 2.  **Optimización Diferencial**: Configura el optimizador para aplicar diferentes hiper-parámetros a distintos grupos de parámetros (Backbone vs Memoria), asegurando que el conocimiento estático se capture sin desestabilizar el razonamiento dinámico.
+
+### 8.3 Interfaz Conversacional (`chat_phi_engram.py`)
+Dado que Phi-1 es un modelo *CausalLM* base (no *Instruct*), la interfaz utiliza un **Chat Template** manual:
+- Se concatena el prefijo `User:` y el sufijo `Assistant:` para inducir el comportamiento de respuesta.
+- Se utiliza decodificación estocástica (`do_sample=True`) para permitir que la memoria Engram influya en la variabilidad de la salida.

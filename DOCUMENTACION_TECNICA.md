@@ -127,3 +127,20 @@ Para validar técnicamente la mejora, se deben realizar análisis de:
 
 ### 7.5 Despliegue en el Hugging Face Hub
 Para que el modelo sea cargable mediante `AutoModel.from_pretrained()`, se debe crear un archivo `configuration_phi_engram.py` y `modeling_phi_engram.py` dentro del repositorio del Hub, registrando las clases mediante `AutoConfig.register()` y `AutoModel.register()`.
+
+---
+
+## 8. Guía de Implementación del Entrenamiento
+
+Hemos proporcionado dos scripts que materializan esta hoja de ruta:
+
+### 8.1 Lógica de Carga (`load_phi_engram.py`)
+Este script automatiza el **Weight Mapping**. Dado que la estructura de capas ha cambiado de `PhiDecoderLayer` a `PhiEngramDecoderLayer`, el mapeo de pesos estándar fallaría. Usamos:
+- `AutoConfig` para replicar el espacio de parámetros de Phi-1.
+- `PhiEngramForCausalLM` para instanciar la estructura aumentada.
+- `model.load_state_dict(..., strict=False)` para transferir pesos del backbone ignorando los módulos de Engram ausentes en el original.
+
+### 8.2 Lógica de Entrenamiento (`train_phi_engram.py`)
+Implementa el algoritmo de **Warm-up de Memoria**:
+1.  **Iteración de Gradientes**: Utiliza `named_modules()` para identificar y habilitar `requires_grad = True` solo en los sub-módulos que contienen la palabra "engram".
+2.  **Optimización Diferencial**: Configura el optimizador para aplicar diferentes hiper-parámetros a distintos grupos de parámetros (Backbone vs Memoria), asegurando que el conocimiento estático se capture sin desestabilizar el razonamiento dinámico.

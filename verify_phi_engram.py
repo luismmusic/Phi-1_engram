@@ -21,7 +21,10 @@ def verify():
 
     # 2. Instanciación
     print("[2/5] Creando el modelo en memoria...")
-    model = PhiEngramForCausalLM(config)
+    # Usamos half precision si hay GPU para ser más eficientes
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float16 if device == "cuda" else torch.float32
+    model = PhiEngramForCausalLM(config).to(device=device, dtype=dtype)
     model.eval() # Ponemos el modelo en modo lectura (evaluación)
 
     # 3. Preparación del texto
@@ -37,6 +40,7 @@ def verify():
     # --- PRUEBA 1 ---
     print("\n--- PRUEBA 1: Procesamiento por Bloques (Batch) ---")
     print(f"Enviando {input_ids.shape[1]} tokens a la vez...")
+    input_ids = input_ids.to(device)
     with torch.no_grad():
         outputs_full = model(input_ids=input_ids)
     print(f"¡Hecho! Resultado obtenido: {outputs_full.logits.shape}")
@@ -49,7 +53,7 @@ def verify():
 
     with torch.no_grad():
         for i in range(input_ids.shape[1]):
-            curr_input_ids = input_ids[:, i:i+1] # Tomamos solo el token actual
+            curr_input_ids = input_ids[:, i:i+1].to(device) # Tomamos solo el token actual
             # El modelo usa el token actual + lo que recuerda (past_key_values)
             outputs = model(input_ids=curr_input_ids, past_key_values=past_key_values, use_cache=True)
             logits_incremental.append(outputs.logits)
